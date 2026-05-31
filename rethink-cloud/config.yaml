@@ -1,0 +1,52 @@
+---
+name: "rethink-cloud — local LG ThinQ server"
+slug: rethink-cloud
+version: "0.1.0"
+description: >-
+  Local server that emulates the LG ThinQ cloud (anszom/rethink), so your LG
+  appliances talk to Home Assistant instead of LG's servers. Built from upstream
+  source at install time.
+url: https://github.com/The-sultan/hassio-rethink-addon/tree/main/rethink-cloud
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+init: false
+host_network: false
+ports:
+  4433/tcp: 4433
+  8884/tcp: 8884
+  1884/tcp: 1884
+  46030/tcp: 46030
+  47878/tcp: 47878
+  44401/tcp: 44401
+ports_description:
+  4433/tcp: "HTTPS — ThinQ2 cloud API (point appliance's 443 here, see README)"
+  8884/tcp: "MQTTS — ThinQ2 device MQTT over TLS"
+  1884/tcp: "MQTT — ThinQ2 device MQTT (plain)"
+  46030/tcp: "ThinQ1 HTTPS API"
+  47878/tcp: "ThinQ1 device port"
+  44401/tcp: "Management / web UI"
+options:
+  hostname: homeassistant
+  mqtt_url: "mqtt://localhost:1883"
+  mqtt_user: ""
+  mqtt_pass: ""
+  discovery_prefix: homeassistant
+  rethink_prefix: rethink
+  log_level:
+    - status
+    - incoming
+    - HTTPS
+    - publish
+    - MGMT
+schema:
+  hostname: str
+  mqtt_url: str
+  mqtt_user: str?
+  mqtt_pass: password?
+  discovery_prefix: str
+  rethink_prefix: str
+  log_level:
+    - "list(status|incoming|HTTPS|publish|MGMT)"
