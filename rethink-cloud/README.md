@@ -38,18 +38,59 @@ takes a few minutes while it clones and compiles the project.
 | `rethink_prefix` | `rethink` | Topic prefix for rethink's own MQTT topics. |
 | `log_level` | all topics | Which log topics to print: `status`, `incoming`, `HTTPS`, `publish`, `MGMT`. Remove entries to make the log quieter. |
 
+---
+
+## How ports work (since 0.1.1)
+
+**Design invariant:** *the port the add-on exposes on the LAN is exactly the
+port the device is told to connect to.*
+
+rethink uses each port number for **two** things at once: it `.listen()`s on
+that port **and** it advertises that same port to the appliance during
+provisioning (`apiServer = https://<hostname>:<https_port>`,
+`mqttServer = ssl://<hostname>:<mqtts_port>`). If the externally-reachable port
+ever differed from the one written into rethink's config, the device would be
+told to connect to a port that isn't actually there.
+
+To guarantee they're equal, the add-on runs on **`host_network: true`** and
+reads the ports you set in its **Network** section, then hands those exact
+numbers to rethink. There is no Docker NAT in between:
+
+- **You configure ports in the add-on's _Network_ section** (Settings →
+  Add-ons → rethink-cloud → **Network**), **not** in the Options. The defaults
+  are `4433 / 8884 / 1884 / 46030 / 47878 / 44401`.
+- Whatever you set there is the port rethink **binds on the host** *and* the
+  port it **tells the device** to use. Change `8884 → 18884` (e.g. to avoid a
+  clash) and rethink will both listen on `18884` and advertise `18884`.
+- If you clear a port field, the add-on falls back to that port's default.
+
+### 🔒 Security implication of host network
+
+`host_network: true` means the add-on **shares the Home Assistant host's
+network namespace** — it has **no network isolation**: it can bind any host
+port (including privileged ports like 443), sees all host interfaces, and its
+listeners are reachable on every address the host has. This is required for the
+invariant above (binding privileged/host ports and matching them 1:1), but it
+is a broader privilege than a normal bridged add-on. Only install it on a
+trusted LAN, and pick ports that don't collide with Home Assistant itself
+(the HA UI on `8123`, and `443` if you've enabled SSL for the frontend).
+
 ### ⚠️ Important: `mqtt_url` and the Mosquitto add-on
 
-The default `mqtt://localhost:1883` only works if the broker is reachable on
-`localhost` from **inside the add-on container** — which is usually **not** the
-case. When you run the official **Mosquitto broker** add-on, reach it at its
-internal hostname instead:
+This add-on runs on the **host network** (see *How ports work* below), so
+`localhost` inside the container **is** the Home Assistant host. The official
+**Mosquitto broker** add-on exposes `1883` on the host, so the default
 
 ```
-mqtt://core-mosquitto:1883
+mqtt://localhost:1883
 ```
 
-with the `mqtt_user` / `mqtt_pass` of the HA user you created for MQTT.
+reaches it directly — set `mqtt_user` / `mqtt_pass` to the HA user you created
+for MQTT.
+
+> On host network the Docker-internal hostname `core-mosquitto` may **not**
+> resolve. Prefer `localhost` (or the host's LAN IP). If Mosquitto listens on a
+> non-default port, set it in `mqtt_url` accordingly.
 
 ### Persistence
 
@@ -72,23 +113,34 @@ This is the part that trips everyone up.
 
 During its **initial setup**, an LG appliance/Wi-Fi module reaches out to LG's
 provisioning endpoint, **`common.lgthinq.com` on port 443**, to discover where
-its "cloud" lives. rethink listens on **4433**, not 443, and a Home Assistant
-add-on **cannot** rebind port 443 on the host or touch the host's `iptables`
-— so you must redirect that bootstrap traffic at the **network level**.
+its "cloud" lives. You must point that name at your HA host (DNS), and the HTTPS
+service has to answer on the port the device dials.
 
-The goal: make `common.lgthinq.com` (and the per-region hosts it returns)
-resolve/redirect to your Home Assistant host, on port **4433** instead of 443.
+In every case you need a **DNS override**: make `common.lgthinq.com` (and the
+regional `*.lgthinq.com` hosts) resolve to your Home Assistant host's IP. What
+you do about the **port** is where the options differ.
 
-### Option A — dnsmasq during bootstrap (recommended)
+### Option A — bind 443 directly (simplest, since 0.1.1)
 
-Run a temporary `dnsmasq` (on any always-on box, or even the HA host via the
+Because the add-on runs on the host network, you can simply set the **HTTPS port
+(`4433/tcp`) to `443`** in the add-on's **Network** section. rethink then binds
+`443` on the host directly and advertises `443` to the device, so **no port
+redirect is needed at all** — only the DNS override above.
+
+Caveats: `443` must be free on the host (don't use this if you've enabled SSL
+for the HA frontend on `443`), and binding it requires the host-network
+privilege this add-on already has.
+
+### Option B — dnsmasq + redirect during bootstrap
+
+If you'd rather leave the add-on's HTTPS port at `4433`, run a temporary
+`dnsmasq` (on any always-on box, or even the HA host via the
 [dnsmasq add-on]) that, **only while you are pairing the appliance**:
 
 1. Answers DNS for `common.lgthinq.com` (and the regional `*.lgthinq.com`
    hosts) with your HA host's IP.
 2. Combine with a port redirect `443 → 4433` on that same box
-   (e.g. `iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 4433`),
-   **or** point the appliance at a box where rethink itself can listen on 443.
+   (e.g. `iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 4433`).
 
 Once the appliance is paired and has stored rethink as its cloud, you can tear
 the dnsmasq/redirect down — subsequent connections go straight to the ports
@@ -101,26 +153,28 @@ address=/common.lgthinq.com/192.168.1.10
 address=/lgthinq.com/192.168.1.10
 ```
 
-### Option B — router-level control
+### Option C — router-level control
 
-If you control your router/DNS:
+If you control your router/DNS and don't want to bind `443` on the host:
 
 - Add a **DNS override / rewrite** for `common.lgthinq.com` (and `*.lgthinq.com`)
   pointing to your HA host, and a **NAT/port-forward or redirect** sending
-  `:443 → HA-host:4433`.
+  `:443 → HA-host:4433` (or whatever you set the HTTPS port to).
 - On OPNsense/pfWall/AdGuard/Pi-hole this is a DNS rewrite plus a NAT rule.
 
-> You generally only need the 443 redirect for the **one-time bootstrap**. After
-> pairing, the appliance talks to the add-on's own ports
-> (`4433/8884/1884/46030/47878`) directly.
+> The 443 redirect is only for the **one-time bootstrap**. After pairing, the
+> appliance talks to the add-on's own ports directly.
 
 ---
 
 ## Ports
 
-| Port | Purpose |
+Configure these in the add-on's **Network** section (not Options). The default
+is shown; rethink binds and advertises whatever you set — see *How ports work*.
+
+| Default | Purpose |
 | --- | --- |
-| `4433/tcp` | HTTPS — ThinQ2 cloud API (point the appliance's 443 here) |
+| `4433/tcp` | HTTPS — ThinQ2 cloud API (set to `443` to skip the redirect) |
 | `8884/tcp` | MQTTS — ThinQ2 device MQTT over TLS |
 | `1884/tcp` | MQTT — ThinQ2 device MQTT (plain) |
 | `46030/tcp` | ThinQ1 HTTPS API |

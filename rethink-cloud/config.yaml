@@ -1,7 +1,7 @@
 ---
 name: "rethink-cloud — local LG ThinQ server"
 slug: rethink-cloud
-version: "0.1.0"
+version: "0.1.1"
 description: >-
   Local server that emulates the LG ThinQ cloud (anszom/rethink), so your LG
   appliances talk to Home Assistant instead of LG's servers. Built from upstream
@@ -13,7 +13,13 @@ arch:
 startup: services
 boot: auto
 init: false
-host_network: false
+# host_network is REQUIRED for the port invariant: rethink uses each port value
+# both to bind AND to advertise to the device (provisioning.ts). With NAT/bridge
+# the bind port and the externally-reachable port could differ; on host network
+# they are the same number, so the port the add-on exposes IS the port told to
+# the device. run.sh reads these via `bashio::addon.port` and feeds them to
+# rethink. See SECURITY note in README.
+host_network: true
 ports:
   4433/tcp: 4433
   8884/tcp: 8884
@@ -22,7 +28,7 @@ ports:
   47878/tcp: 47878
   44401/tcp: 44401
 ports_description:
-  4433/tcp: "HTTPS — ThinQ2 cloud API (point appliance's 443 here, see README)"
+  4433/tcp: "HTTPS — ThinQ2 cloud API (set to 443 to skip the port redirect)"
   8884/tcp: "MQTTS — ThinQ2 device MQTT over TLS"
   1884/tcp: "MQTT — ThinQ2 device MQTT (plain)"
   46030/tcp: "ThinQ1 HTTPS API"
