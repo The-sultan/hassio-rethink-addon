@@ -1,7 +1,7 @@
 ---
 name: "rethink-cloud — local LG ThinQ server"
 slug: rethink-cloud
-version: "0.1.3"
+version: "0.2.0"
 description: >-
   Local server that emulates the LG ThinQ cloud (anszom/rethink), so your LG
   appliances talk to Home Assistant instead of LG's servers. Built from upstream
@@ -14,42 +14,18 @@ startup: services
 boot: auto
 init: false
 # host_network is REQUIRED for the port invariant: rethink uses each port value
-# both to bind AND to advertise to the device (provisioning.ts). With NAT/bridge
-# the bind port and the externally-reachable port could differ; on host network
-# they are the same number, so the port the add-on exposes IS the port told to
-# the device. run.sh reads these via `bashio::addon.port` and feeds them to
-# rethink. See SECURITY note in README.
+# both to bind AND to advertise to the device (provisioning.ts). On the host
+# network the port the add-on binds IS the port reachable on the LAN IS the port
+# told to the device — no NAT in between. See the SECURITY note in README.
 host_network: true
-# Required so bashio can reach the Supervisor API. bashio::config hits
-# GET /addons/self/options/config and bashio::addon.port hits
-# GET /addons/<slug>/info. Per the Supervisor RBAC (api/middleware/security.py)
-# the self options/config path is in the role bypass list and /addons/<slug>/info
-# matches the ROLE_DEFAULT "/.+/info" pattern, so `default` is technically
-# sufficient for BOTH. `manager` is set here only to take the role completely out
-# of the equation while debugging the 403s; if the add-on works you can drop back
-# to `default` to reduce privilege (manager also grants control over OTHER
-# add-ons, which this one never uses).
 #
-# NOTE: a 403 with hassio_api already set is a TOKEN problem, not a role problem
-# (see home-assistant/supervisor#4111). It means the new manifest permissions
-# were not applied to the running container — fix by reloading the repository and
-# UNINSTALLING + REINSTALLING the add-on, not just Update/Restart.
-hassio_api: true
-hassio_role: manager
-ports:
-  4433/tcp: 4433
-  8884/tcp: 8884
-  1884/tcp: 1884
-  46030/tcp: 46030
-  47878/tcp: 47878
-  44401/tcp: 44401
-ports_description:
-  4433/tcp: "HTTPS — ThinQ2 cloud API (set to 443 to skip the port redirect)"
-  8884/tcp: "MQTTS — ThinQ2 device MQTT over TLS"
-  1884/tcp: "MQTT — ThinQ2 device MQTT (plain)"
-  46030/tcp: "ThinQ1 HTTPS API"
-  47878/tcp: "ThinQ1 device port"
-  44401/tcp: "Management / web UI"
+# NOTE: this add-on deliberately does NOT use the Supervisor API. Earlier
+# versions read options/ports via bashio (which calls the Supervisor API) and
+# hit persistent "403 forbidden / no token" failures on host_network installs.
+# run.sh now reads everything straight from /data/options.json with jq, so no
+# hassio_api / hassio_role grant is needed and there is no token to break.
+# Because of that, the ports are configured here as OPTIONS (not in the Network
+# section, which would require the API to read back).
 options:
   hostname: homeassistant
   mqtt_url: "mqtt://localhost:1883"
@@ -57,6 +33,12 @@ options:
   mqtt_pass: ""
   discovery_prefix: homeassistant
   rethink_prefix: rethink
+  https_port: 4433
+  mqtts_port: 8884
+  mqtt_port: 1884
+  thinq1_https_port: 46030
+  thinq1_port: 47878
+  management_port: 44401
   log_level:
     - status
     - incoming
@@ -70,5 +52,11 @@ schema:
   mqtt_pass: password?
   discovery_prefix: str
   rethink_prefix: str
+  https_port: int(1,65535)
+  mqtts_port: int(1,65535)
+  mqtt_port: int(1,65535)
+  thinq1_https_port: int(1,65535)
+  thinq1_port: int(1,65535)
+  management_port: int(1,65535)
   log_level:
     - "list(status|incoming|HTTPS|publish|MGMT)"

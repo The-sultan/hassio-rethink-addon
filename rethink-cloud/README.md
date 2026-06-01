@@ -36,11 +36,21 @@ takes a few minutes while it clones and compiles the project.
 | `mqtt_pass` | _(empty)_ | MQTT password. |
 | `discovery_prefix` | `homeassistant` | Must match `discovery.prefix` of HA's MQTT integration (default `homeassistant`). |
 | `rethink_prefix` | `rethink` | Topic prefix for rethink's own MQTT topics. |
+| `https_port` | `4433` | ThinQ2 HTTPS / cloud API port. Set to `443` to skip the bootstrap redirect (see below). |
+| `mqtts_port` | `8884` | ThinQ2 device MQTT-over-TLS port. |
+| `mqtt_port` | `1884` | ThinQ2 device MQTT (plain) port. |
+| `thinq1_https_port` | `46030` | ThinQ1 HTTPS API port. |
+| `thinq1_port` | `47878` | ThinQ1 device port. |
+| `management_port` | `44401` | Management / web UI port. |
 | `log_level` | all topics | Which log topics to print: `status`, `incoming`, `HTTPS`, `publish`, `MGMT`. Remove entries to make the log quieter. |
+
+> The six `*_port` options are both **bound on the host** and **advertised to
+> the device** — see *How ports work*. Change one if it collides with another
+> service (e.g. set `mqtts_port` away from `8884`).
 
 ---
 
-## How ports work (since 0.1.1)
+## How ports work (since 0.2.0)
 
 **Design invariant:** *the port the add-on exposes on the LAN is exactly the
 port the device is told to connect to.*
@@ -52,17 +62,22 @@ provisioning (`apiServer = https://<hostname>:<https_port>`,
 ever differed from the one written into rethink's config, the device would be
 told to connect to a port that isn't actually there.
 
-To guarantee they're equal, the add-on runs on **`host_network: true`** and
-reads the ports you set in its **Network** section, then hands those exact
-numbers to rethink. There is no Docker NAT in between:
+To guarantee they're equal, the add-on runs on **`host_network: true`** (no
+Docker NAT) and uses **six port Options** as the single source of truth — the
+add-on binds them on the host *and* hands the same numbers to rethink:
 
-- **You configure ports in the add-on's _Network_ section** (Settings →
-  Add-ons → rethink-cloud → **Network**), **not** in the Options. The defaults
-  are `4433 / 8884 / 1884 / 46030 / 47878 / 44401`.
-- Whatever you set there is the port rethink **binds on the host** *and* the
-  port it **tells the device** to use. Change `8884 → 18884` (e.g. to avoid a
+- **You configure ports in the add-on's _Configuration_ (Options) tab**, as
+  `https_port`, `mqtts_port`, `mqtt_port`, `thinq1_https_port`, `thinq1_port`
+  and `management_port`. Defaults: `4433 / 8884 / 1884 / 46030 / 47878 / 44401`.
+- Whatever you set is the port rethink **binds on the host** *and* the port it
+  **tells the device** to use. Change `mqtts_port 8884 → 18884` (e.g. to avoid a
   clash) and rethink will both listen on `18884` and advertise `18884`.
-- If you clear a port field, the add-on falls back to that port's default.
+
+> **Why Options and not the Network tab?** Reading the Network-section port
+> mapping requires the Supervisor API, which proved unreliable on host-network
+> installs (persistent `403 forbidden / no token`). Since 0.2.0 the add-on reads
+> everything straight from `/data/options.json` and never calls the Supervisor
+> API — so there is no token to break. The Network tab is intentionally unused.
 
 ### 🔒 Security implication of host network
 
@@ -120,12 +135,12 @@ In every case you need a **DNS override**: make `common.lgthinq.com` (and the
 regional `*.lgthinq.com` hosts) resolve to your Home Assistant host's IP. What
 you do about the **port** is where the options differ.
 
-### Option A — bind 443 directly (simplest, since 0.1.1)
+### Option A — bind 443 directly (simplest)
 
-Because the add-on runs on the host network, you can simply set the **HTTPS port
-(`4433/tcp`) to `443`** in the add-on's **Network** section. rethink then binds
-`443` on the host directly and advertises `443` to the device, so **no port
-redirect is needed at all** — only the DNS override above.
+Because the add-on runs on the host network, you can simply set the
+**`https_port` Option to `443`** (in the add-on's **Configuration** tab).
+rethink then binds `443` on the host directly and advertises `443` to the
+device, so **no port redirect is needed at all** — only the DNS override above.
 
 Caveats: `443` must be free on the host (don't use this if you've enabled SSL
 for the HA frontend on `443`), and binding it requires the host-network
@@ -169,17 +184,18 @@ If you control your router/DNS and don't want to bind `443` on the host:
 
 ## Ports
 
-Configure these in the add-on's **Network** section (not Options). The default
-is shown; rethink binds and advertises whatever you set — see *How ports work*.
+Configure these as **Options** (Configuration tab), not in the Network section.
+The default is shown; rethink binds and advertises whatever you set — see *How
+ports work*.
 
-| Default | Purpose |
-| --- | --- |
-| `4433/tcp` | HTTPS — ThinQ2 cloud API (set to `443` to skip the redirect) |
-| `8884/tcp` | MQTTS — ThinQ2 device MQTT over TLS |
-| `1884/tcp` | MQTT — ThinQ2 device MQTT (plain) |
-| `46030/tcp` | ThinQ1 HTTPS API |
-| `47878/tcp` | ThinQ1 device port |
-| `44401/tcp` | Management / web UI |
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `https_port` | `4433` | HTTPS — ThinQ2 cloud API (set to `443` to skip the redirect) |
+| `mqtts_port` | `8884` | MQTTS — ThinQ2 device MQTT over TLS |
+| `mqtt_port` | `1884` | MQTT — ThinQ2 device MQTT (plain) |
+| `thinq1_https_port` | `46030` | ThinQ1 HTTPS API |
+| `thinq1_port` | `47878` | ThinQ1 device port |
+| `management_port` | `44401` | Management / web UI |
 
 ---
 
