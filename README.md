@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="rethink-cloud/logo.png" alt="rethink-cloud add-on" width="640">
+</p>
+
 # The-sultan's Home Assistant Add-ons
 
 A Home Assistant add-on repository. Currently ships one add-on that packages
