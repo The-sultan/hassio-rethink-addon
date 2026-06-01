@@ -1,7 +1,7 @@
 ---
 name: "rethink-cloud — local LG ThinQ server"
 slug: rethink-cloud
-version: "0.1.2"
+version: "0.1.3"
 description: >-
   Local server that emulates the LG ThinQ cloud (anszom/rethink), so your LG
   appliances talk to Home Assistant instead of LG's servers. Built from upstream
@@ -20,14 +20,22 @@ init: false
 # the device. run.sh reads these via `bashio::addon.port` and feeds them to
 # rethink. See SECURITY note in README.
 host_network: true
-# Required so bashio can reach the Supervisor API. Both bashio::config (reads
-# /addons/self/options/config) and bashio::addon.port (reads /addons/self/info
-# for the port mappings) hit the Supervisor; without this they fail with
-# "Unable to access the API, forbidden" and every option/port comes back empty.
-# These are SELF endpoints, so the default role is sufficient — `manager` (which
-# grants control over OTHER add-ons) is not needed and would be over-privilege.
+# Required so bashio can reach the Supervisor API. bashio::config hits
+# GET /addons/self/options/config and bashio::addon.port hits
+# GET /addons/<slug>/info. Per the Supervisor RBAC (api/middleware/security.py)
+# the self options/config path is in the role bypass list and /addons/<slug>/info
+# matches the ROLE_DEFAULT "/.+/info" pattern, so `default` is technically
+# sufficient for BOTH. `manager` is set here only to take the role completely out
+# of the equation while debugging the 403s; if the add-on works you can drop back
+# to `default` to reduce privilege (manager also grants control over OTHER
+# add-ons, which this one never uses).
+#
+# NOTE: a 403 with hassio_api already set is a TOKEN problem, not a role problem
+# (see home-assistant/supervisor#4111). It means the new manifest permissions
+# were not applied to the running container — fix by reloading the repository and
+# UNINSTALLING + REINSTALLING the add-on, not just Update/Restart.
 hassio_api: true
-hassio_role: default
+hassio_role: manager
 ports:
   4433/tcp: 4433
   8884/tcp: 8884
