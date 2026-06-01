@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1400" viewBox="0 0 1400 1400">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="500" x2="1400" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ED4C6"/><stop offset="0.55" stop-color="#1AA6D8"/><stop offset="1" stop-color="#1565C0"/>
+    </linearGradient>
+    <filter id="sh2" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#05366a" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <g transform="translate(0,500)">
+    <rect width="1400" height="400" rx="72" fill="url(#bg2)"/>
+    <g transform="translate(41,30) scale(0.34)">
+      <g filter="url(#sh2)" fill="#ffffff">
+        <rect x="232" y="486" width="560" height="156" rx="78"/>
+        <circle cx="338" cy="520" r="124"/><circle cx="690" cy="516" r="128"/>
+        <circle cx="440" cy="424" r="116"/><circle cx="606" cy="442" r="126"/><circle cx="512" cy="466" r="148"/>
+      </g>
+      <g transform="translate(362,352) scale(12.6)" fill="#0B4FA6">
+        <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
+      </g>
+      <g transform="translate(512,506) scale(0.62)">
+        <circle r="100" fill="#A50034"/><circle cx="-40" cy="-42" r="15" fill="#ffffff"/>
+        <path d="M -8 -46 L -8 36 L 44 36" fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+    <text x="428" y="180" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" letter-spacing="-2"><tspan font-size="96" font-weight="800" fill="#ffffff">rethink</tspan><tspan font-size="96" font-weight="300" fill="#CFF6F1">-cloud</tspan><tspan font-size="50" font-weight="400" fill="#EAFBF9" dx="20" letter-spacing="0">add-on</tspan></text>
+    <text x="430" y="250" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="42" font-weight="500" fill="#EAFBF9" opacity="0.92" letter-spacing="0.5">local LG ThinQ server</text>
+    <text x="430" y="312" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="36" font-weight="400" fill="#DDF6F2" opacity="0.85" letter-spacing="0.5">unofficial Home Assistant add-on · wraps anszom/rethink</text>
+  </g>
+</svg>

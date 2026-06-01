@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ED4C6"/><stop offset="0.55" stop-color="#1AA6D8"/><stop offset="1" stop-color="#1565C0"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#05366a" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="232" fill="url(#bg)"/>
+  <g filter="url(#sh)" fill="#ffffff">
+    <rect x="232" y="486" width="560" height="156" rx="78"/>
+    <circle cx="338" cy="520" r="124"/><circle cx="690" cy="516" r="128"/>
+    <circle cx="440" cy="424" r="116"/><circle cx="606" cy="442" r="126"/><circle cx="512" cy="466" r="148"/>
+  </g>
+  <g transform="translate(362,352) scale(12.6)" fill="#0B4FA6">
+    <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
+  </g>
+  <g transform="translate(512,506) scale(0.62)">
+    <circle r="100" fill="#A50034"/><circle cx="-40" cy="-42" r="15" fill="#ffffff"/>
+    <path d="M -8 -46 L -8 36 L 44 36" fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
