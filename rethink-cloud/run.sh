@@ -27,7 +27,7 @@ set -e
 
 CONFIG_PATH="/data/config.json"
 OPTIONS="/data/options.json"
-APP_DIR="/opt/rethink/rethink"
+APP_DIR="/opt/rethink"
 
 # Defensive: if the Supervisor wrote no options file, fall back to an empty
 # object so the jq defaults below apply.

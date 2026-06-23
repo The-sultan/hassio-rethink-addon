@@ -1,7 +1,7 @@
 ---
 name: "rethink-cloud — local LG ThinQ server"
 slug: rethink-cloud
-version: "0.2.1"
+version: "0.2.2"
 description: >-
   Local server that emulates the LG ThinQ cloud (anszom/rethink), so your LG
   appliances talk to Home Assistant instead of LG's servers. Built from upstream
