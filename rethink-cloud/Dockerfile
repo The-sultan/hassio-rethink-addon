@@ -16,7 +16,7 @@ ARG RETHINK_REF=f7-remote-start-config
 # Docker would reuse a stale cloned layer even after the branch moves. Bump this to
 # the target fork commit on every change; it is referenced in the RUN below, so it
 # is part of that layer's cache key and forces a fresh clone of the branch HEAD.
-ARG RETHINK_COMMIT=1f1e3ea
+ARG RETHINK_COMMIT=00909a3
 RUN echo "rethink fork commit: ${RETHINK_COMMIT}" \
  && git clone --depth 1 --branch "${RETHINK_REF}" \
         "${RETHINK_REPO}" /opt/rethink
