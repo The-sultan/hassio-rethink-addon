@@ -12,7 +12,13 @@ RUN apk add --no-cache nodejs npm git openssl
 # pin RETHINK_REF to a SHA/tag if you want reproducible builds.
 ARG RETHINK_REPO=https://github.com/The-sultan/rethink.git
 ARG RETHINK_REF=f7-remote-start-config
-RUN git clone --depth 1 --branch "${RETHINK_REF}" \
+# Cache-bust: the git clone command is byte-identical across add-on versions, so
+# Docker would reuse a stale cloned layer even after the branch moves. Bump this to
+# the target fork commit on every change; it is referenced in the RUN below, so it
+# is part of that layer's cache key and forces a fresh clone of the branch HEAD.
+ARG RETHINK_COMMIT=1f1e3ea
+RUN echo "rethink fork commit: ${RETHINK_COMMIT}" \
+ && git clone --depth 1 --branch "${RETHINK_REF}" \
         "${RETHINK_REPO}" /opt/rethink
 
 # Upstream removed the nested rethink/ directory on 2026-06-04 (commit 10271b2);
